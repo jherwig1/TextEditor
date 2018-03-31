@@ -1,4 +1,6 @@
 # TextEditor
 Simple text editor in C.
 
-Jeremy Herwig
+Followin this guide:
+https://viewsourcecode.org/snaptoken/kilo/
+
