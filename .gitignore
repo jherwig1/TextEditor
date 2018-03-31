@@ -43,6 +43,10 @@ kilo
 *.idb
 *.pdb
 
+# Vim
+*.swp
+*.swo
+
 # Kernel Module Compile Results
 *.mod*
 *.cmd
