@@ -16,6 +16,13 @@ struct abuf {
 	int len;
 };
 
+enum editorKey {
+	ARROW_UP = 1000,
+	ARROW_DOWN = 1001,
+	ARROW_LEFT = 1002,
+	ARROW_RIGHT = 1003,
+};
+
 #define ABUF_INIT {NULL, 0}
 
 void abAppend(struct abuf *ab, const char *s, int len) {
@@ -82,12 +89,31 @@ void enableRawMode() {
 	}
 }
 
-char editorReadKey() {
+int editorReadKey() {
 	int nread;
 	char c;
 	while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
 		if (nread == -1 && errno != EAGAIN) {
 			die("read");
+		}
+	}
+
+	if (c == '\x1b') {
+		char seq[3];
+		if (read(STDIN_FILENO, &seq[0], 1) != 1) {
+			return '\x1b';
+		}
+		if (read(STDIN_FILENO, &seq[1], 1) != 1) {
+			return '\x1b';
+		}
+
+		if (seq[0] == '[') {
+			switch(seq[1]) {
+				case 'A': return ARROW_UP;
+				case 'B': return ARROW_DOWN;
+				case 'C': return ARROW_RIGHT;
+				case 'D': return ARROW_LEFT;
+			}
 		}
 	}
 
@@ -179,37 +205,41 @@ void editorRefreshScreen() {
 }
 
 
-void editorMoveKeys(char c) {
+void editorMoveCursor(int c) {
 	switch(c) {
-		case 'h':
-			E.cx--;
+		case ARROW_LEFT:
+			if (E.cx != 0)
+				E.cx--;
 			break;
-		case 'j':
-			E.cy++;
+		case ARROW_DOWN:
+			if (E.cy != (E.rows - 1))
+				E.cy++;
 			break;
-		case 'k':
-			E.cy--;
+		case ARROW_UP:
+			if (E.cy != 0)
+				E.cy--;
 			break;
-		case 'l':
-			E.cx++;
+		case ARROW_RIGHT:
+			if (E.cx != (E.cols -1))
+				E.cx++;
 			break;
 	}
 }
 
 /*** input ***/
 void editorProcessKeypress() { 
-	char c = editorReadKey();
+	int c = editorReadKey();
 	switch (c) {
 		case CTRL_KEY('q'): 
 			write(STDOUT_FILENO, "\x1b[2J", 4); //clear screen
 			write(STDOUT_FILENO, "\x1b[H", 3); //reposition cursor
 			exit(0);
 			break;
-		case 'h':
-		case 'j':
-		case 'k':
-		case 'l':
-			editorMoveKeys(c);
+		case ARROW_UP:
+		case ARROW_DOWN:
+		case ARROW_LEFT:
+		case ARROW_RIGHT:
+			editorMoveCursor(c);
 			break;
 		
 	}
